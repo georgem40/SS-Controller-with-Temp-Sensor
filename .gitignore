@@ -1,0 +1,12 @@
+src/.pioenvs
+src/.pio
+src/.piolibdeps
+src/.clang_complete
+src/.gcc-flags.json
+src/*.swp
+win/bin
+win/obj
+win/.vs
+win/SolarsystemController.csproj.user
+win/SolarsystemController_TemporaryKey.pfx
+*/.vscode
