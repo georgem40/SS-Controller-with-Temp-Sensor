@@ -40,15 +40,6 @@ void WMainMenu::tick()
    weeks += 1;
    days  += 1;
 
-   if (lp.change_color)
-   {
-      rwb_color = ILI9341_RED;
-   }
-   else 
-   {
-      rwb_color = ILI9341_GREEN;
-   }
-
    if (last_enabled != cal_enabled)
    {
       last_enabled = cal_enabled;
@@ -84,35 +75,54 @@ void WMainMenu::tick()
       last_second = lp.now_second();
       now_seconds.paint_two_digits(last_second, ILI9341_GREEN, ILI9341_BLACK);
    }
-   if (last_rwhb[CH_RED] != output_channels[CH_RED]) {
-      last_rwhb[CH_RED] = output_channels[CH_RED];
-      if ( output_channels[CH_RED] != channels[CH_RED] && lp.get_enable_light_control() )
-         now_r.paint_two_digits(last_rwhb[CH_RED], rwb_color, ILI9341_BLACK);
-      else
-         now_r.paint_two_digits(channels[CH_RED], rwb_color, ILI9341_BLACK);
 
-      if ( lp.printZero )
-         now_r.paint_two_digits(0, rwb_color, ILI9341_BLACK);
+   if(lp.temp_override) {
+      if(!lp.updated_temp_override_text 
+         || last_rwhb[CH_RED] != output_channels[CH_RED] 
+         || last_rwhb[CH_WHITE] != output_channels[CH_WHITE] 
+         || last_rwhb[CH_BLUE] != output_channels[CH_BLUE])
+      {
+         last_rwhb[CH_RED] = output_channels[CH_RED];
+         last_rwhb[CH_WHITE] = output_channels[CH_WHITE];
+         last_rwhb[CH_BLUE] = output_channels[CH_BLUE];
+
+         lp.updated_temp_override_text = true;
+         now_r.paint_two_digits(output_channels[CH_RED], ILI9341_RED, ILI9341_BLACK);
+         now_wh.paint_two_digits(output_channels[CH_WHITE], ILI9341_RED, ILI9341_BLACK);
+         now_b.paint_two_digits(output_channels[CH_BLUE], ILI9341_RED, ILI9341_BLACK);
+      }
+
+      if (channels[CH_RED] == 0 && channels[CH_WHITE] == 0 && channels[CH_BLUE] == 0)
+      {
+         now_r.paint_two_digits(channels[CH_RED], ILI9341_GREEN, ILI9341_BLACK);
+         now_wh.paint_two_digits(channels[CH_WHITE], ILI9341_GREEN, ILI9341_BLACK);
+         now_b.paint_two_digits(channels[CH_BLUE], ILI9341_GREEN, ILI9341_BLACK);
+         lp.temp_override = false;
+         lp.updated_temp_override_text = true;
+      }
    }
-   if (last_rwhb[CH_WHITE] != output_channels[CH_WHITE]) {
-      last_rwhb[CH_WHITE] = output_channels[CH_WHITE];
-      if ( output_channels[CH_WHITE] != channels[CH_WHITE] && lp.get_enable_light_control() )
-         now_wh.paint_two_digits(last_rwhb[CH_WHITE], rwb_color, ILI9341_BLACK);
-      else
-         now_wh.paint_two_digits(channels[CH_WHITE], rwb_color, ILI9341_BLACK);
-
-      if ( lp.printZero )
-         now_wh.paint_two_digits(0, rwb_color, ILI9341_BLACK);
-   }
-   if (last_rwhb[CH_BLUE] != output_channels[CH_BLUE]) {
-      last_rwhb[CH_BLUE] = output_channels[CH_BLUE];
-      if ( output_channels[CH_BLUE] != channels[CH_BLUE] && lp.get_enable_light_control() )
-         now_b.paint_two_digits(last_rwhb[CH_BLUE], rwb_color, ILI9341_BLACK);
-      else
-         now_b.paint_two_digits(channels[CH_BLUE], rwb_color, ILI9341_BLACK);
-
-      if ( lp.printZero )
-         now_b.paint_two_digits(0, rwb_color, ILI9341_BLACK);
+   else {
+      if (last_rwhb[CH_RED] != output_channels[CH_RED]) {
+         last_rwhb[CH_RED] = output_channels[CH_RED];
+         if ( output_channels[CH_RED] != channels[CH_RED] && lp.get_enable_light_control() )
+            now_r.paint_two_digits(last_rwhb[CH_RED], ILI9341_GREEN, ILI9341_BLACK);
+         else
+            now_r.paint_two_digits(channels[CH_RED], ILI9341_GREEN, ILI9341_BLACK);
+      }
+      if (last_rwhb[CH_WHITE] != output_channels[CH_WHITE]) {
+         last_rwhb[CH_WHITE] = output_channels[CH_WHITE];
+         if ( output_channels[CH_WHITE] != channels[CH_WHITE] && lp.get_enable_light_control() )
+            now_wh.paint_two_digits(last_rwhb[CH_WHITE], ILI9341_GREEN, ILI9341_BLACK);
+         else
+            now_wh.paint_two_digits(channels[CH_WHITE], ILI9341_GREEN, ILI9341_BLACK);
+      }
+      if (last_rwhb[CH_BLUE] != output_channels[CH_BLUE]) {
+         last_rwhb[CH_BLUE] = output_channels[CH_BLUE];
+         if ( output_channels[CH_BLUE] != channels[CH_BLUE] && lp.get_enable_light_control() )
+            now_b.paint_two_digits(last_rwhb[CH_BLUE], ILI9341_GREEN, ILI9341_BLACK);
+         else
+            now_b.paint_two_digits(channels[CH_BLUE], ILI9341_GREEN, ILI9341_BLACK);
+      }
    }
 
    uint8_t program = lp.getLoadedProgram();
@@ -135,8 +145,6 @@ void WMainMenu::tick()
             first->hour, first->minute, last_adjusted.hour, last_adjusted.minute);
       WLabel::paint(buf,    30, 130, ILI9341_GREEN, ILI9341_BLACK, 2, 0);
    }
-
-   lp.printZero = false;
 }
 
 void WMainMenu::paint()

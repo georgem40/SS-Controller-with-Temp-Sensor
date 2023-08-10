@@ -21,11 +21,6 @@
 #define LO_LIMIT_OFFSET       (UVB_OFF_TIME_OFFSET - CRC_LENGTH - sizeof( uint8_t            ))
 #define HI_LIMIT_OFFSET       (LO_LIMIT_OFFSET - CRC_LENGTH - sizeof( uint8_t                ))
 
-// temporary fix until I can figure out how to get ILI9341 colors to show up in this file
-bool change_color = false;
-bool comeDown = false;
-bool printZero; // this is to set the main menu rwb values to zero if the temperature change program is running
-
 uint16_t LightingProgram::to_minutes(const struct program_step *s)
 {
    return (s->hour * 60) + s->minute;
@@ -484,6 +479,36 @@ static bool add_time(uint8_t *h, uint8_t *m, uint8_t minutes, uint8_t sh, uint8_
    return false;
 }
 
+void LightingProgram::light_temp_control()
+{
+   if(channels[CH_RED] || channels[CH_WHITE] || channels[CH_BLUE])
+   {
+      // if current_temp > HI: reduce brightness to 0%
+      if (currentTemp > HiLimit){
+         output_channels[CH_RED]   = 0;
+         output_channels[CH_WHITE] = 0;
+         output_channels[CH_BLUE]  = 0;
+
+         // signal text change in the main menu
+         temp_override = true;
+         if(!updated_temp_override_text)  
+            updated_temp_override_text = false;
+      }
+      // if LO < current_temp < HI: reduce brightness to 50%
+      else if (currentTemp > LoLimit){
+         output_channels[CH_RED]   = int(channels[CH_RED] / 2);
+         output_channels[CH_WHITE] = int(channels[CH_WHITE] / 2);
+         output_channels[CH_BLUE]  = int(channels[CH_BLUE] / 2);
+         
+         // signal text change in the main menu
+         temp_override = true;
+         if(!updated_temp_override_text)  
+            updated_temp_override_text = false;
+      }
+      // if currentTemp < LO: keep brightness at 100% / do nothing
+   }
+}
+
 bool LightingProgram::step_time_overflows(const struct program_step *step) const
 {
    uint8_t end_hours, end_minutes;
@@ -801,7 +826,7 @@ void LightingProgram::tick()
    }
 
    // updates to perform at specified time increments
-   const int update_delay = 5;
+   const int update_delay = 2;
    if ( now.secondstime() >= last_AL_update_time + update_delay)
    {
       last_AL_update_time = now.secondstime();
@@ -878,53 +903,10 @@ void LightingProgram::tick()
          output_channels[CH_BLUE]  = channels[CH_BLUE];
       }
 
-      // condition for saving half values so the program doesn't keep dividing the brightness by 2
-      // if half_r = channels[CH_RED], then channels[CH_RED] has already been divided by 2 and should not be divided again
-      if ((half_r != channels[CH_RED] && half_wh != channels[CH_WHITE] && half_b != channels[CH_BLUE])){
-         half_r = channels[CH_RED] / 2;
-         half_wh = channels[CH_WHITE] / 2;
-         half_b = channels[CH_BLUE] / 2;
-         max_r = channels[CH_RED];
-         max_wh = channels[CH_WHITE];
-         max_b = channels[CH_BLUE];
-      }
-
-      // if current_temp > HI: reduce brightness to 0%
-      if (currentTemp > HiLimit){
-         output_channels[CH_RED]   = 0;
-         output_channels[CH_WHITE] = 0;
-         output_channels[CH_BLUE]  = 0;
-
-         change_color = true;
-         printZero = true;
-      }
-      // if LO < current_temp < HI: reduce brightness to 50%
-      else if (currentTemp > LoLimit){
-         channels[CH_RED]   = half_r;
-         channels[CH_WHITE] = half_wh;
-         channels[CH_BLUE]  = half_b;
-            
-         change_color = true;
-         printZero = false;
-      }
-      // if currentTemp < LO: keep brightness at 100%
-      else {
-         channels[CH_RED]   = max_r;
-         channels[CH_WHITE] = max_wh;
-         channels[CH_BLUE]  = max_b;
-         
-         change_color = false;
-         printZero = false;
-      }
-
-      if (channels[CH_RED] == 0 && channels[CH_WHITE] == 0 && channels[CH_BLUE] == 0)
-      {
-         change_color = false;
-         printZero = false;
-      }
+      // modify output channels based on temperature
+      light_temp_control();
 
       // send updated output channel colors to the hardware
       sendProgrammedUpdate();
    }
-
 }

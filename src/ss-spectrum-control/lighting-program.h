@@ -203,18 +203,9 @@ class LightingProgram
       uint8_t LoLimit = 90;
       uint8_t HiLimit = 110;
 
-      // Containers to store full and half blast RWB values
-      uint8_t max_r;
-      uint8_t max_wh;
-      uint8_t max_b;
-      uint8_t half_r;
-      uint8_t half_wh;
-      uint8_t half_b;
-
-      // new color to set the rbw values to
-      bool change_color;
-      bool comeDown; // for testing temperature change
-      bool printZero;
+      // indicate that the temperature control code is active
+      bool temp_override = false; 
+      bool updated_temp_override_text = false;
 
       // For temperature detection functionality
       bool change_intensity = true;
@@ -245,6 +236,7 @@ class LightingProgram
       void forceStep();
       long delta_t();
       void run_step();
+      void light_temp_control();
 
       void initialVeg();
       void initialBloom();
